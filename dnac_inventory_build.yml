@@ -1,0 +1,48 @@
+---
+- name: Inventory from tag
+  when: dnac_tag_to_update | default('')
+  block:
+    - name: Get tags details
+      cisco.dnac.tag_info:
+        dnac_host: "{{ dnac_host }}"
+        dnac_username: "{{ dnac_username }}"
+        dnac_password: "{{ dnac_password }}"
+        dnac_verify: "{{ dnac_verify | default(omit) }}"
+        name: "{{ dnac_tag_to_update }}"
+      register: tag_details
+
+    - name: Get hosts for the specified tag
+      when: tag_details.dnac_response.response
+      cisco.dnac.tag_member_info:
+        dnac_host: "{{ dnac_host }}"
+        dnac_username: "{{ dnac_username }}"
+        dnac_password: "{{ dnac_password }}"
+        dnac_verify: "{{ dnac_verify | default(omit) }}"
+        id: "{{ tag_details.dnac_response.response[0].id }}"
+        memberType: networkdevice
+      register: dnac_devices_to_update_from_tag
+
+- name: Inventory from hostlist
+  when: dnac_hosts_to_update | default([])
+  block:
+    - name: Make sure list of hosts is a list
+      ansible.builtin.assert:
+        that:
+          - dnac_hosts_to_update is iterable
+          - dnac_hosts_to_update | type_debug == 'list'
+        fail_msg: "dnac_hosts_to_update variable must be a list."
+
+    - name: Get devices by hostname
+      cisco.dnac.network_device_info:
+        dnac_host: "{{ dnac_host }}"
+        dnac_username: "{{ dnac_username }}"
+        dnac_password: "{{ dnac_password }}"
+        dnac_verify: "{{ dnac_verify | default(omit) }}"
+        hostname: "{{ dnac_hosts_to_update }}"
+      register: dnac_devices_to_update_from_hostlist
+
+- name: Build complete inventory
+  ansible.builtin.set_fact:
+    dnac_devices_to_update: "{{ (dnac_devices_to_update_from_tag.dnac_response.response | default([]) +
+                                 dnac_devices_to_update_from_hostlist.dnac_response.response | default([]))
+                                | unique(attribute='hostname') }}"

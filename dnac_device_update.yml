@@ -1,0 +1,50 @@
+---
+- name: Get device info
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Build inventory
+      ansible.builtin.include_tasks:
+        file: dnac_inventory_build.yml
+
+    - name: Pre-filter inventory
+      ansible.builtin.include_tasks:
+        file: dnac_inventory_prefilter.yml
+
+    - name: Split inventory into batches
+      ansible.builtin.include_tasks:
+        file: dnac_inventory_batch.yml
+
+    # - name: Distribute firmware
+    #   when: not ansible_check_mode
+    #   ansible.builtin.include_tasks:
+    #     file: dnac_distribution.yml
+    #   loop:
+    #     - dnac_inventory_batch1 | default([])
+    #     - dnac_inventory_batch2 | default([])
+    #     - dnac_inventory_batch3
+    #   loop_control:
+    #     loop_var: device_list
+
+    # Software activation tasks
+    # - name: Activate firmware
+    #   when: not ansible_check_mode
+    #   ansible.builtin.include_tasks:
+    #     file: dnac_activation.yml
+    #   loop:
+    #     - batch1 | default([])
+    #     - batch2 | default([])
+    #     - batch3
+    #   loop_control:
+    #     loop_var: device_list
+
+    # Replace with tasks that push result to a SNow ticket
+    - name: Output reports
+      when: not ansible_check_mode
+      ansible.builtin.debug:
+        var: lookup('ansible.builtin.file', item)
+      loop:
+        - /tmp/distribution_results.csv
+        - /tmp/distribution_list_failed.txt
+        - /tmp/distribution_list_success.txt
