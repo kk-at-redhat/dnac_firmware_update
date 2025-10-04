@@ -1,6 +1,2 @@
 ---
-dnac_rollout_strategy:
-  batch1_size: 2
-  batch2_size: 10
-
 dnac_distribution_check_delay: 15

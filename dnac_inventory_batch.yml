@@ -1,20 +1,28 @@
 ---
-- name: Build first inventory batch
-  when: dnac_devices_to_update | length > dnac_rollout_strategy.batch1_size
-  ansible.builtin.set_fact:
-    dnac_inventory_batch1: "{{ dnac_devices_to_update[0 : dnac_rollout_strategy.batch1_size] }}"
-    dnac_inventory_batch_marker: "{{ dnac_rollout_strategy.batch1_size }}"
+- name: Split inventory into batches
+  when: dnac_rollout_strategy is defined
+  block:
+    - name: Build first inventory batch
+      when: dnac_devices_to_update | length > dnac_rollout_strategy.batch1_size
+      ansible.builtin.set_fact:
+        dnac_inventory_batch1: "{{ dnac_devices_to_update[0 : dnac_rollout_strategy.batch1_size] }}"
+        dnac_inventory_batch_marker: "{{ dnac_rollout_strategy.batch1_size }}"
 
-- name: Build second inventory batch
-  when: dnac_devices_to_update | length > (dnac_rollout_strategy.batch1_size + dnac_rollout_strategy.batch2_size)
-  ansible.builtin.set_fact:
-    dnac_inventory_batch2: "{{ dnac_devices_to_update[dnac_inventory_batch_marker | int : dnac_rollout_strategy.batch1_size +
-                                                                                          dnac_rollout_strategy.batch2_size] }}"
-    dnac_inventory_batch_marker: "{{ dnac_inventory_batch_marker | int + dnac_rollout_strategy.batch2_size }}"
+    - name: Build second inventory batch
+      when: dnac_devices_to_update | length > (dnac_rollout_strategy.batch1_size + dnac_rollout_strategy.batch2_size)
+      ansible.builtin.set_fact:
+        dnac_inventory_batch2: "{{ dnac_devices_to_update[dnac_inventory_batch_marker | int : dnac_rollout_strategy.batch1_size +
+                                                                                              dnac_rollout_strategy.batch2_size] }}"
+        dnac_inventory_batch_marker: "{{ dnac_inventory_batch_marker | int + dnac_rollout_strategy.batch2_size }}"
 
-- name: Build third inventory batch
+    - name: Build third inventory batch
+      ansible.builtin.set_fact:
+        dnac_inventory_batch3: "{{ dnac_devices_to_update[dnac_inventory_batch_marker | default(0) | int :] }}"
+
+- name: Skip splitting inventory into batches
+  when: dnac_rollout_strategy is not defined
   ansible.builtin.set_fact:
-    dnac_inventory_batch3: "{{ dnac_devices_to_update[dnac_inventory_batch_marker | default(0) | int :] }}"
+    dnac_inventory_batch3: "{{ dnac_devices_to_update }}"
 
 - name: Show inventory batches
   when: ansible_check_mode
