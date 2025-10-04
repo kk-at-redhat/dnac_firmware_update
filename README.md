@@ -13,3 +13,4 @@ Inventories. In AAP these will be extra_vars:
 
 Distribution. In AAP these can be extra_vars:
 - dnac_distribution_check_delay (default 15, delay between checks)
+- dnac_batch_fail_threshold (default 2, how many unreachable devices should cause the batch to fail and execution stop)

@@ -1,2 +1,3 @@
 ---
 dnac_distribution_check_delay: 15
+dnac_batch_fail_threshold: 2

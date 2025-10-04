@@ -1,4 +1,18 @@
 ---
+- name: Refresh details on devices from current batch
+  cisco.dnac.network_device_info:
+    dnac_host: "{{ dnac_host }}"
+    dnac_username: "{{ dnac_username }}"
+    dnac_password: "{{ dnac_password }}"
+    dnac_verify: "{{ dnac_verify | default(omit) }}"
+    hostname: "{{ device_list | map(attribute='hostname') }}"
+  register: dnac_devices_current_batch
+
+- name: Fail if not Reachable devices exceed threshold
+  ansible.builtin.fail:
+    msg: "Non Reachable devices in the current batch exceed the threshold."
+  when: dnac_devices_current_batch | rejectattr('reachabilityStatus', 'equalto', 'Reachable') | length > dnac_batch_fail_threshold
+
 # Add tasks that overwrite golden image
 
 - name: Initiate device sync
