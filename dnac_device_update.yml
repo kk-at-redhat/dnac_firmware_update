@@ -20,24 +20,22 @@
     #   when: not ansible_check_mode
     #   ansible.builtin.include_tasks:
     #     file: dnac_distribution.yml
-    #   loop:
-    #     - dnac_inventory_batch1 | default([])
-    #     - dnac_inventory_batch2 | default([])
-    #     - dnac_inventory_batch3
+    #   loop: "{{ [dnac_inventory_batch1 | default([])] + [dnac_inventory_batch2 | default([])] + dnac_inventory_dynamic_batches }}"
     #   loop_control:
     #     loop_var: device_list
+    #     extended: true
+    #     label: "Batch: {{ ansible_loop.index }}"
 
     # Software activation tasks
     # - name: Activate firmware
     #   when: not ansible_check_mode
     #   ansible.builtin.include_tasks:
     #     file: dnac_activation.yml
-    #   loop:
-    #     - batch1 | default([])
-    #     - batch2 | default([])
-    #     - batch3
+    #   loop: "{{ [dnac_inventory_batch1 | default([])] + [dnac_inventory_batch2 | default([])] + dnac_inventory_dynamic_batches }}"
     #   loop_control:
     #     loop_var: device_list
+    #     extended: true
+    #     label: "Batch: {{ ansible_loop.index }}"
 
     # Replace with tasks that push result to a SNow ticket
     - name: Output reports
