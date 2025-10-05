@@ -47,7 +47,7 @@
         dnac_username: "{{ dnac_username }}"
         dnac_password: "{{ dnac_password }}"
         dnac_verify: "{{ dnac_verify | default(omit) }}"
-        hostname: "{{ (dnac_hosts_to_update.content | b64decode).splitlines() }}"
+        hostname: "{{ (dnac_hosts_to_update.content | default([]) | b64decode).splitlines() }}"
       register: dnac_devices_to_update_from_hostlist
 
 - name: Build complete inventory

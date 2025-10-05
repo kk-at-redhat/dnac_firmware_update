@@ -15,7 +15,7 @@
     line: "{{ item }}"
     create: true
     mode: '666'
-  loop: "{{ dnac_hosts_to_update | default([]) | difference(dnac_devices_to_update | map(attribute='hostname')) }}"
+  loop: "{{ (dnac_hosts_to_update.content | default([]) | b64decode).splitlines() | difference(dnac_devices_to_update | map(attribute='hostname')) }}"
 
 - name: Add unreachable devices to the final csv report
   ansible.builtin.lineinfile:
@@ -33,7 +33,7 @@
     line: "{{ item }},,,,,,,,,Doesn't exist"
     create: true
     mode: '666'
-  loop: "{{ dnac_hosts_to_update | default([]) | difference(dnac_devices_to_update | map(attribute='hostname')) }}"
+  loop: "{{ (dnac_hosts_to_update.content | default([]) | b64decode).splitlines() | difference(dnac_devices_to_update | map(attribute='hostname')) }}"
 
 - name: Remove unreachable devices from the inventory
   ansible.builtin.set_fact:
