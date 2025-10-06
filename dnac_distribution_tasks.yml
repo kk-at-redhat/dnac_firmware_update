@@ -79,7 +79,10 @@
     dnac_verify: "{{ dnac_verify | default(omit) }}"
     taskId: "{{ image_distribution_trigger.json.response.taskId }}"
   register: distribution_task_details
-  until: "'Running = 0, Pending = 0' in distribution_task_details.dnac_response.response.progress"
+  until: >
+         'Running = 0, Pending = 0' in distribution_task_details.dnac_response.response.progress or
+         (distribution_task_details.dnac_response.response.failureReason is defined and
+          'auto-aborted' in distribution_task_details.dnac_response.response.failureReason)
   delay: "{{ dnac_distribution_check_delay }}"
   retries: "{{ dnac_distribution_max_time / dnac_distribution_check_delay | int }}"
 
