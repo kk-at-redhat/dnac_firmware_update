@@ -41,7 +41,9 @@
 
     # Software activation tasks
     # - name: Activate firmware
-    #   when: not ansible_check_mode
+    #   when: >
+    #         not ansible_check_mode and
+    #         dnac_perform_activation | default(false)
     #   ansible.builtin.include_tasks:
     #     file: dnac_activation.yml
     #   loop: "{{ ([dnac_inventory_batch1 | default([])] +
