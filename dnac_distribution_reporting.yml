@@ -1,0 +1,23 @@
+---
+# - name: Get all Network Device Image Updates
+#   cisco.dnac.network_device_image_updates_info:
+#     dnac_host: "{{ dnac_host }}"
+#     dnac_username: "{{ dnac_username }}"
+#     dnac_password: "{{ dnac_password }}"
+#     dnac_verify: "{{ dnac_verify | default(omit) }}"
+#     hostName: "{{ device_list | map(attribute='hostname') }}"
+#   register: image_distribution_status
+
+# - name: Wait for image distribution to complete (batch {{ ansible_loop.index }})
+#   cisco.dnac.network_device_images_info:
+#     dnac_host: "{{ dnac_host }}"
+#     dnac_username: "{{ dnac_username }}"
+#     dnac_password: "{{ dnac_password }}"
+#     dnac_verify: "{{ dnac_verify | default(omit) }}"
+#     networkDeviceUpdateStatus: DISTRIBUTION_PENDING
+#   register: image_distribution_status
+
+# - debug:
+#     var: image_distribution_status
+
+# Add tasks to update reports

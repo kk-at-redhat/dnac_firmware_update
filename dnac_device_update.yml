@@ -35,6 +35,10 @@
             extended: true
             label: "Batch: {{ ansible_loop.index }}"
 
+        - name: Generate distribution reports
+          ansible.builtin.include_tasks:
+            file: dnac_distribution_reporting.yml
+
     # Software activation tasks
     # - name: Activate firmware
     #   when: not ansible_check_mode
