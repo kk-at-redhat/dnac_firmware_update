@@ -59,8 +59,10 @@
     - name: Output reports
       when: not ansible_check_mode
       ansible.builtin.debug:
-        var: lookup('ansible.builtin.file', item)
+        msg: "{{ (lookup('ansible.builtin.file', item, errors='ignore') | default(' ', true)).splitlines() }}"
       loop:
         - /tmp/distribution_results.csv
         - /tmp/distribution_list_failed.txt
         - /tmp/distribution_list_success.txt
+      loop_control:
+        label: "{{ item }}"
