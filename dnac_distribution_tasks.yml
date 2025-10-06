@@ -1,18 +1,4 @@
 ---
-- name: Refresh details on devices from current batch - Batch {{ ansible_loop.index }}
-  cisco.dnac.network_device_info:
-    dnac_host: "{{ dnac_host }}"
-    dnac_username: "{{ dnac_username }}"
-    dnac_password: "{{ dnac_password }}"
-    dnac_verify: "{{ dnac_verify | default(omit) }}"
-    hostname: "{{ device_list | map(attribute='hostname') }}"
-  register: dnac_devices_current_batch
-
-- name: Fail if not-Reachable devices exceed threshold - Batch {{ ansible_loop.index }}
-  ansible.builtin.fail:
-    msg: "Non Reachable devices in the current batch exceed the threshold."
-  when: dnac_devices_current_batch.dnac_response.response | rejectattr('reachabilityStatus', 'equalto', 'Reachable') | length > dnac_batch_fail_threshold
-
 - name: Build distribution payload for custom image - Batch {{ ansible_loop.index }}
   when: dnac_image_overwrite | default('')
   ansible.builtin.set_fact:
@@ -56,20 +42,6 @@
     body: "{{ dnac_image_distribution_payload }}"
     status_code: 200, 201, 202, 204, 206
   register: image_distribution_trigger
-
-# Alternative - doesn't exist in 6.13
-# - name: Initiate image distribution - Batch {{ ansible_loop.index }}
-#   cisco.dnac.network_device_images_distribute_bulk:
-#     dnac_host: "{{ dnac_host }}"
-#     dnac_username: "{{ dnac_username }}"
-#     dnac_password: "{{ dnac_password }}"
-#     dnac_verify: "{{ dnac_verify | default(omit) }}"
-#     validate_response_schema: true
-#     payload:
-#       - distributedImages:
-#           - id: "{{ image_details.dnac_response.response[0].imageUuid }}"
-#         id: "{{ device_list | map(attribute='id') }}"
-#   register: image_distribution_trigger
 
 - name: Wait for distribution task to finish
   cisco.dnac.task_info:
