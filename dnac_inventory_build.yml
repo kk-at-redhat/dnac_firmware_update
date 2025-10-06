@@ -12,7 +12,10 @@
       register: tag_details
 
     - name: Get hosts for the specified tag
-      when: tag_details.dnac_response.response
+      when: >
+            tag_details.dnac_response.response and
+            (ansible_loop.index == 1 or
+             dnac_devices_to_update_from_tag.dnac_response.response | default([]))
       cisco.dnac.tag_member_info:
         dnac_host: "{{ dnac_host }}"
         dnac_username: "{{ dnac_username }}"
@@ -23,7 +26,8 @@
         offset: "{{ item }}"
       loop: "{{ range(1, 10000, 500) | list }}"
       loop_control:
-        break_when: dnac_devices_to_update_from_tag.dnac_response.response | default([]) | length < 500
+        extended: true
+#        break_when: dnac_devices_to_update_from_tag.dnac_response.response | default([]) | length < 500
       register: dnac_devices_to_update_from_tag
 
 - name: Inventory from hostlist
