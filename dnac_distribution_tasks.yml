@@ -1,0 +1,107 @@
+---
+- name: Refresh details on devices from current batch - Batch {{ ansible_loop.index }}
+  cisco.dnac.network_device_info:
+    dnac_host: "{{ dnac_host }}"
+    dnac_username: "{{ dnac_username }}"
+    dnac_password: "{{ dnac_password }}"
+    dnac_verify: "{{ dnac_verify | default(omit) }}"
+    hostname: "{{ device_list | map(attribute='hostname') }}"
+  register: dnac_devices_current_batch
+
+- name: Fail if not-Reachable devices exceed threshold - Batch {{ ansible_loop.index }}
+  ansible.builtin.fail:
+    msg: "Non Reachable devices in the current batch exceed the threshold."
+  when: dnac_devices_current_batch.dnac_response.response | rejectattr('reachabilityStatus', 'equalto', 'Reachable') | length > dnac_batch_fail_threshold
+
+- name: Build distribution payload for custom image - Batch {{ ansible_loop.index }}
+  when: dnac_image_overwrite | default('')
+  ansible.builtin.set_fact:
+    dnac_image_distribution_payload: "{{ dnac_image_distribution_payload | default([]) +
+                                         [{'deviceUuid': item.id,
+                                           'imageUuid': image_details.dnac_response.response[0].imageUuid}] }}"
+  loop: "{{ device_list }}"
+  loop_control:
+    label: "Adding to payload: {{ item.hostname }}"
+
+- name: Build distribution payload for Golden image - Batch {{ ansible_loop.index }}
+  when: not dnac_image_overwrite | default('')
+  ansible.builtin.set_fact:
+    dnac_image_distribution_payload: "{{ dnac_image_distribution_payload | default([]) + [{'deviceUuid': item.id}] }}"
+  loop: "{{ device_list }}"
+  loop_control:
+    label: "Adding to payload: {{ item.hostname }}"
+
+- name: Authenticate to DNAC and get token - Batch {{ ansible_loop.index }}
+  ansible.builtin.uri:
+    url: "https://{{ dnac_host }}/dna/system/api/v1/auth/token"
+    method: POST
+    user: "{{ dnac_username }}"
+    password: "{{ dnac_password }}"
+    force_basic_auth: true
+    validate_certs: "{{ dnac_verify | default(omit) }}"
+    return_content: true
+    headers:
+      Content-Type: "application/json"
+  register: auth_response
+
+- name: Trigger software image distribution - Batch {{ ansible_loop.index }}
+  ansible.builtin.uri:
+    url: "https://{{ dnac_host }}/dna/intent/api/v1/image/distribution"
+    method: POST
+    headers:
+      X-Auth-Token: "{{ auth_response.json.Token }}"
+      Content-Type: "application/json"
+    body_format: json
+    validate_certs: "{{ dnac_verify | default(omit) }}"
+    body: "{{ dnac_image_distribution_payload }}"
+    status_code: 200, 201, 202, 204, 206
+  register: image_distribution_trigger
+
+# Alternative - doesn't exist in 6.13
+# - name: Initiate image distribution - Batch {{ ansible_loop.index }}
+#   cisco.dnac.network_device_images_distribute_bulk:
+#     dnac_host: "{{ dnac_host }}"
+#     dnac_username: "{{ dnac_username }}"
+#     dnac_password: "{{ dnac_password }}"
+#     dnac_verify: "{{ dnac_verify | default(omit) }}"
+#     validate_response_schema: true
+#     payload:
+#       - distributedImages:
+#           - id: "{{ image_details.dnac_response.response[0].imageUuid }}"
+#         id: "{{ device_list | map(attribute='id') }}"
+#   register: image_distribution_trigger
+
+- name: Wait for distribution task to finish
+  cisco.dnac.task_info:
+    dnac_host: "{{ dnac_host }}"
+    dnac_username: "{{ dnac_username }}"
+    dnac_password: "{{ dnac_password }}"
+    dnac_verify: "{{ dnac_verify | default(omit) }}"
+    taskId: "{{ image_distribution_trigger.json.response.taskId }}"
+  register: distribution_task_details
+  until: "'Running = 0, Pending = 0' in distribution_task_details.dnac_response.response.progress"
+  delay: "{{ dnac_distribution_check_delay }}"
+  retries: "{{ dnac_distribution_max_time / dnac_distribution_check_delay | int }}"
+
+# - name: Get all Network Device Image Updates
+#   cisco.dnac.network_device_image_updates_info:
+#     dnac_host: "{{ dnac_host }}"
+#     dnac_username: "{{ dnac_username }}"
+#     dnac_password: "{{ dnac_password }}"
+#     dnac_verify: "{{ dnac_verify | default(omit) }}"
+#     hostName: "{{ device_list | map(attribute='hostname') }}"
+#   register: image_distribution_status
+
+# - name: Wait for image distribution to complete (batch {{ ansible_loop.index }})
+#   cisco.dnac.network_device_images_info:
+#     dnac_host: "{{ dnac_host }}"
+#     dnac_username: "{{ dnac_username }}"
+#     dnac_password: "{{ dnac_password }}"
+#     dnac_verify: "{{ dnac_verify | default(omit) }}"
+#     networkDeviceUpdateStatus: DISTRIBUTION_PENDING
+#   register: image_distribution_status
+
+# - debug:
+#     var: image_distribution_status
+
+# Add tasks to update reports

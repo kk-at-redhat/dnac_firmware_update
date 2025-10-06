@@ -16,22 +16,34 @@
       ansible.builtin.include_tasks:
         file: dnac_inventory_batch.yml
 
-    # - name: Distribute firmware
-    #   when: not ansible_check_mode
-    #   ansible.builtin.include_tasks:
-    #     file: dnac_distribution.yml
-    #   loop: "{{ [dnac_inventory_batch1 | default([])] + [dnac_inventory_batch2 | default([])] + dnac_inventory_dynamic_batches }}"
-    #   loop_control:
-    #     loop_var: device_list
-    #     extended: true
-    #     label: "Batch: {{ ansible_loop.index }}"
+    - name: Software distribution steps
+      when: not ansible_check_mode
+      block:
+        - name: Image related tasks
+          ansible.builtin.include_tasks:
+            file: dnac_distribution_image.yml
+
+        - name: Distribute firmware
+          ansible.builtin.include_tasks:
+            file: dnac_distribution_tasks.yml
+          loop: "{{ ([dnac_inventory_batch1 | default([])] +
+                     [dnac_inventory_batch2 | default([])] +
+                     dnac_inventory_dynamic_batches) |
+                    reject('equalto', []) }}"
+          loop_control:
+            loop_var: device_list
+            extended: true
+            label: "Batch: {{ ansible_loop.index }}"
 
     # Software activation tasks
     # - name: Activate firmware
     #   when: not ansible_check_mode
     #   ansible.builtin.include_tasks:
     #     file: dnac_activation.yml
-    #   loop: "{{ [dnac_inventory_batch1 | default([])] + [dnac_inventory_batch2 | default([])] + dnac_inventory_dynamic_batches }}"
+    #   loop: "{{ ([dnac_inventory_batch1 | default([])] +
+    #              [dnac_inventory_batch2 | default([])] +
+    #              dnac_inventory_dynamic_batches) |
+    #             reject('equalto', []) }}"
     #   loop_control:
     #     loop_var: device_list
     #     extended: true

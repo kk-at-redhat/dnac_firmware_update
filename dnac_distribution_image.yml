@@ -1,0 +1,17 @@
+---
+- name: Use image different from golden
+  when: dnac_image_overwrite | default('')
+  block:
+    - name: Get image details
+      cisco.dnac.swim_image_details_info:
+        dnac_host: "{{ dnac_host }}"
+        dnac_username: "{{ dnac_username }}"
+        dnac_password: "{{ dnac_password }}"
+        dnac_verify: "{{ dnac_verify | default(omit) }}"
+        name: "{{ dnac_image_overwrite }}"
+      register: image_details
+
+    - name: Fail if image doesn't exist
+      ansible.builtin.fail:
+        msg: "Specified image doesn't exist. Please, make sure to give full image name including extension."
+      when: not image_details.dnac_response.response
