@@ -57,7 +57,7 @@
     status_code: 200, 201, 202, 204, 206
   register: image_distribution_trigger
 
-- name: Wait for distribution task to finish
+- name: Wait for distribution task to finish - Batch {{ ansible_loop.index }}
   cisco.dnac.task_info:
     dnac_host: "{{ dnac_host }}"
     dnac_username: "{{ dnac_username }}"
@@ -70,4 +70,4 @@
          (distribution_task_details.dnac_response.response.failureReason is defined and
           'auto-aborted' in distribution_task_details.dnac_response.response.failureReason)
   delay: "{{ dnac_distribution_check_delay }}"
-  retries: "{{ dnac_distribution_max_time / dnac_distribution_check_delay | int }}"
+  retries: "{{ ((dnac_distribution_max_time_initial if ansible_loop.index == 1 else dnac_distribution_max_time) / dnac_distribution_check_delay) | int }}"

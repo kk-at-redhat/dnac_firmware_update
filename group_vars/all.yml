@@ -1,4 +1,5 @@
 ---
 dnac_distribution_check_delay: 300
-dnac_distribution_max_time: 43200
+dnac_distribution_max_time_initial: 3300
+dnac_distribution_max_time: 600
 dnac_batch_fail_threshold: 2

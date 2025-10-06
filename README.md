@@ -13,7 +13,8 @@ Inventories. In AAP these will be extra_vars:
 
 Distribution. In AAP these can be extra_vars:
 - dnac_distribution_check_delay (delay between checks)
-- dnac_distribution_max_time (maximum amount of time in seconds to wait for distribution to finish before failing)
+- dnac_distribution_max_time_initial (max time in seconds to wait before moving to second batch)
+- dnac_distribution_max_time (max time in seconds to wait between batches)
 - dnac_batch_fail_threshold (default 2, how many unreachable devices should cause the batch to fail and execution stop)
 - dnac_image_overwrite (name of the image to overwrite golden image)
 
