@@ -1,4 +1,8 @@
 ---
+- name: Reset distribution payload - Batch {{ ansible_loop.index }}
+  ansible.builtin.set_fact:
+    dnac_image_distribution_payload: []
+
 - name: Build distribution payload for custom image - Batch {{ ansible_loop.index }}
   when: dnac_image_overwrite | default('')
   ansible.builtin.set_fact:
@@ -56,6 +60,10 @@
     body: "{{ dnac_image_distribution_payload }}"
     status_code: 200, 201, 202, 204, 206
   register: image_distribution_trigger
+
+- name: Save task ID for Batch {{ ansible_loop.index }}
+  ansible.builtin.set_fact:
+    dnac_distribution_task_ids: "{{ dnac_distribution_task_ids | default([]) + [image_distribution_trigger.json.response.taskId] }}"
 
 - name: Wait for distribution task to finish - Batch {{ ansible_loop.index }}
   ansible.builtin.include_tasks:
