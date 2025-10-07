@@ -16,7 +16,7 @@
     method: GET
     headers:
       X-Auth-Token: "{{ auth_response.json.Token }}"
-    validate_certs:  "{{ dnac_verify | default(omit) }}"
+    validate_certs: "{{ dnac_verify | default(omit) }}"
     return_content: true
   loop: "{{ dnac_distribution_task_ids }}"
   loop_control:
