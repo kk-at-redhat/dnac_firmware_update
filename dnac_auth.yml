@@ -1,0 +1,27 @@
+---
+- name: Authenticate to DNAC
+  block:
+    - name: Get DNAC API token
+      ansible.builtin.uri:
+        url: "https://{{ dnac_host }}/dna/system/api/v1/auth/token"
+        method: POST
+        user: "{{ dnac_username }}"
+        password: "{{ dnac_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ dnac_verify | default(omit) }}"
+        return_content: true
+        headers:
+          Content-Type: "application/json"
+      no_log: true
+      register: auth_response
+
+  rescue:
+    - name: Extract authentication error
+      ansible.builtin.set_fact:
+        auth_error: "{{ auth_response.msg }}"
+      no_log: true
+
+    - name: Show authentication error
+      ansible.builtin.debug:
+        msg: " Getting API token from DNAC failed with the following error: {{ auth_error }}"
+      failed_when: true
