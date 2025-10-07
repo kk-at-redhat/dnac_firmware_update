@@ -20,7 +20,7 @@
 - name: Add unreachable devices to the final csv report
   ansible.builtin.lineinfile:
     path: /tmp/distribution_results.csv
-    line: "{{ item.hostname }},{{ item.managementIpAddress }},{{ item.platformId }},{{ item.serialNumber }},{{ item.softwareVersion }},,,,,Unreachable"
+    line: "{{ item.hostname }},{{ item.managementIpAddress }},{{ item.platformId }},{{ item.serialNumber }},{{ item.softwareVersion }},,,,FAILURE,Unreachable"
     create: true
     mode: '666'
   loop: "{{ dnac_devices_to_update | rejectattr('reachabilityStatus', 'equalto', 'Reachable') }}"
@@ -30,7 +30,7 @@
 - name: Add non-existing devices to the final csv report
   ansible.builtin.lineinfile:
     path: /tmp/distribution_results.csv
-    line: "{{ item }},,,,,,,,,Doesn't exist"
+    line: "{{ item }},,,,,,,,FAILURE,Doesn't exist"
     create: true
     mode: '666'
   loop: "{{ (dnac_hosts_to_update.content | default([]) | b64decode).splitlines() | difference(dnac_devices_to_update | map(attribute='hostname')) }}"
