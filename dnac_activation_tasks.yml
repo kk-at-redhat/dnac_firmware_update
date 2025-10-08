@@ -7,7 +7,7 @@
   when: dnac_image_overwrite | default('')
   ansible.builtin.set_fact:
     dnac_image_activation_payload: "{{ dnac_image_activation_payload | default([]) +
-                                       [{'deviceUuid': item.id,
+                                       [{'deviceUuid': item.instanceUuid,
                                          'imageUuid': [image_details.dnac_response.response[0].imageUuid],
                                          'distributeIfNeeded': false,
                                          'activateLowerImageVersion': true}] }}"
@@ -19,7 +19,7 @@
   when: not dnac_image_overwrite | default('')
   ansible.builtin.set_fact:
     dnac_image_activation_payload: "{{ dnac_image_activation_payload | default([]) +
-                                       [{'deviceUuid': item.id,
+                                       [{'deviceUuid': item.instanceUuid,
                                          'distributeIfNeeded': false,
                                          'activateLowerImageVersion': true}] }}"
   loop: "{{ device_list }}"

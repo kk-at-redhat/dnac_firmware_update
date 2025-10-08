@@ -7,7 +7,7 @@
   when: dnac_image_overwrite | default('')
   ansible.builtin.set_fact:
     dnac_image_distribution_payload: "{{ dnac_image_distribution_payload | default([]) +
-                                         [{'deviceUuid': item.id,
+                                         [{'deviceUuid': item.instanceUuid,
                                            'imageUuid': image_details.dnac_response.response[0].imageUuid}] }}"
   loop: "{{ device_list }}"
   loop_control:
@@ -16,7 +16,7 @@
 - name: Build distribution payload for Golden image - Batch {{ ansible_loop.index }}
   when: not dnac_image_overwrite | default('')
   ansible.builtin.set_fact:
-    dnac_image_distribution_payload: "{{ dnac_image_distribution_payload | default([]) + [{'deviceUuid': item.id}] }}"
+    dnac_image_distribution_payload: "{{ dnac_image_distribution_payload | default([]) + [{'deviceUuid': item.instanceUuid}] }}"
   loop: "{{ device_list }}"
   loop_control:
     label: "Adding to payload: {{ item.hostname }}"
