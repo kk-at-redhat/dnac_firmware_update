@@ -16,8 +16,12 @@ Distribution. In AAP these can be extra_vars:
 - dnac_distribution_max_time_initial (default 3300, max time in seconds to wait before moving to second batch)
 - dnac_distribution_max_time_final (default 3300, max time in seconds to wait for last batch to finish)
 - dnac_distribution_max_time (default 600, max time in seconds to wait between batches)
-- dnac_batch_fail_threshold (default 2, how many unreachable devices should cause the batch to fail and execution stop)
 - dnac_image_overwrite (name of the image to overwrite golden image)
 
-Activation (extra_vars):
+Activation. In AAP these can be extra_vars:
+- dnac_activation_check_delay (delay between checks)
+- dnac_activation_max_time_initial (default 3300, max time in seconds to wait before moving to second batch)
+- dnac_activation_max_time_final (default 3300, max time in seconds to wait for last batch to finish)
+- dnac_activation_max_time (default 600, max time in seconds to wait between batches)
+- dnac_image_overwrite (name of the image to overwrite golden image)
 - dnac_perform_activation (default false)

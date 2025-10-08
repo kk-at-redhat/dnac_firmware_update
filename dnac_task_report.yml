@@ -1,10 +1,21 @@
 ---
 - name: Wait for last distribution task to finish
+  when: not dnac_perform_activation | default(false)
   ansible.builtin.include_tasks:
-    file: dnac_distribution_wait.yml
+    file: dnac_task_wait.yml
   vars:
     task_id: "{{ image_distribution_trigger.json.response.taskId }}"
     max_wait_time: "{{ dnac_distribution_max_time_final }}"
+    check_delay: "{{ dnac_distribution_check_delay }}"
+
+- name: Wait for last activation task to finish
+  when: dnac_perform_activation | default(false)
+  ansible.builtin.include_tasks:
+    file: dnac_task_wait.yml
+  vars:
+    task_id: "{{ image_activation_trigger.json.response.taskId }}"
+    max_wait_time: "{{ dnac_activation_max_time_final }}"
+    check_delay: "{{ dnac_activation_check_delay }}"
 
 - name: Authenticate to DNAC API
   ansible.builtin.include_tasks:
@@ -18,7 +29,7 @@
       X-Auth-Token: "{{ auth_response.json.Token }}"
     validate_certs: "{{ dnac_verify | default(omit) }}"
     return_content: true
-  loop: "{{ dnac_distribution_task_ids }}"
+  loop: "{{ dnac_activation_task_ids if dnac_perform_activation | default(false) else dnac_distribution_task_ids }}"
   loop_control:
     label: "Getting details for task id: {{ item }}"
   register: task_details

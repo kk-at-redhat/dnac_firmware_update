@@ -1,0 +1,22 @@
+---
+- name: Wait for task to finish - Batch {{ ansible_loop.index | default('last') }}
+  block:
+    - name: Wait for task to finish - Batch {{ ansible_loop.index | default('last') }}
+      cisco.dnac.task_info:
+        dnac_host: "{{ dnac_host }}"
+        dnac_username: "{{ dnac_username }}"
+        dnac_password: "{{ dnac_password }}"
+        dnac_verify: "{{ dnac_verify | default(omit) }}"
+        taskId: "{{ task_id }}"
+      register: task_details
+      until: >
+             'Running = 0, Pending = 0' in task_details.dnac_response.response.progress or
+             (task_details.dnac_response.response.failureReason is defined and
+              'auto-aborted' in task_details.dnac_response.response.failureReason)
+      delay: "{{ dnac_distribution_check_delay | int }}"
+      retries: "{{ (max_wait_time | int / check_delay | int) | int }}"
+
+  rescue:
+    - name: Continue with the next batch or reporting - Batch {{ ansible_loop.index | default('last') }}
+      ansible.builtin.debug:
+        msg: "Rome wasn’t built in a day and tasks are taking time too, so continuing automation..."

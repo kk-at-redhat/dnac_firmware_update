@@ -44,7 +44,8 @@
 
 - name: Wait for distribution task to finish - Batch {{ ansible_loop.index }}
   ansible.builtin.include_tasks:
-    file: dnac_distribution_wait.yml
+    file: dnac_task_wait.yml
   vars:
     task_id: "{{ image_distribution_trigger.json.response.taskId }}"
     max_wait_time: "{{ dnac_distribution_max_time_initial if ansible_loop.index == 1 else dnac_distribution_max_time }}"
+    check_delay: "{{ dnac_distribution_check_delay }}"

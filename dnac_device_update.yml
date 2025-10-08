@@ -16,14 +16,16 @@
       ansible.builtin.include_tasks:
         file: dnac_inventory_batch.yml
 
-    - name: Software distribution steps
+    - name: Software distribution and activation
       when: not ansible_check_mode
       block:
-        - name: Image related tasks
+        - name: Get custom image details
+          when: dnac_image_overwrite | default('')
           ansible.builtin.include_tasks:
-            file: dnac_distribution_image.yml
+            file: dnac_image_get.yml
 
-        - name: Distribute firmware
+        - name: Software distribution steps
+          when: not dnac_perform_activation | default(false)
           ansible.builtin.include_tasks:
             file: dnac_distribution_tasks.yml
           loop: "{{ ([dnac_inventory_batch1 | default([])] +
@@ -35,34 +37,30 @@
             extended: true
             label: "Batch: {{ ansible_loop.index }}"
 
-        - name: Generate distribution reports
+        - name: Software activation steps
+          when: dnac_perform_activation | default(false)
           ansible.builtin.include_tasks:
-            file: dnac_distribution_reporting.yml
+            file: dnac_activation_tasks.yml
+          loop: "{{ ([dnac_inventory_batch1 | default([])] +
+                     [dnac_inventory_batch2 | default([])] +
+                     dnac_inventory_dynamic_batches) |
+                    reject('equalto', []) }}"
+          loop_control:
+            loop_var: device_list
+            extended: true
+            label: "Batch: {{ ansible_loop.index }}"
 
-    # Software activation tasks
-    # - name: Activate firmware
-    #   when: >
-    #         not ansible_check_mode and
-    #         dnac_perform_activation | default(false)
-    #   ansible.builtin.include_tasks:
-    #     file: dnac_activation.yml
-    #   loop: "{{ ([dnac_inventory_batch1 | default([])] +
-    #              [dnac_inventory_batch2 | default([])] +
-    #              dnac_inventory_dynamic_batches) |
-    #             reject('equalto', []) }}"
-    #   loop_control:
-    #     loop_var: device_list
-    #     extended: true
-    #     label: "Batch: {{ ansible_loop.index }}"
+        - name: Generate activation reports
+          ansible.builtin.include_tasks:
+            file: dnac_task_report.yml
 
-    # Replace with tasks that push result to a SNow ticket
-    - name: Output reports
-      when: not ansible_check_mode
-      ansible.builtin.debug:
-        msg: "{{ (lookup('ansible.builtin.file', item, errors='ignore') | default(' ', true)).splitlines() }}"
-      loop:
-        - /tmp/distribution_results.csv
-        - /tmp/distribution_list_failed.txt
-        - /tmp/distribution_list_success.txt
-      loop_control:
-        label: "{{ item }}"
+        # Replace with tasks that push results to a SNow ticket
+        - name: Output reports
+          ansible.builtin.debug:
+            msg: "{{ (lookup('ansible.builtin.file', item, errors='ignore') | default(' ', true)).splitlines() }}"
+          loop:
+            - /tmp/distribution_results.csv
+            - /tmp/distribution_list_failed.txt
+            - /tmp/distribution_list_success.txt
+          loop_control:
+            label: "{{ item }}"
