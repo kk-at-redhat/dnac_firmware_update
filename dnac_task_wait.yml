@@ -13,7 +13,7 @@
              'Running = 0, Pending = 0' in task_details.dnac_response.response.progress or
              (task_details.dnac_response.response.failureReason is defined and
               'auto-aborted' in task_details.dnac_response.response.failureReason)
-      delay: "{{ dnac_distribution_check_delay | int }}"
+      delay: "{{ check_delay | int }}"
       retries: "{{ (max_wait_time | int / check_delay | int) | int }}"
 
   rescue:

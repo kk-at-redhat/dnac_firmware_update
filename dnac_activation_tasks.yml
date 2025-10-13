@@ -43,9 +43,6 @@
     status_code: 200, 201, 202, 204, 206
   register: image_activation_trigger
 
-- debug:
-    var: image_activation_trigger
-
 - name: Save task ID for Batch {{ ansible_loop.index }}
   ansible.builtin.set_fact:
     dnac_activation_task_ids: "{{ dnac_activation_task_ids | default([]) + [image_activation_trigger.json.response.taskId] }}"
