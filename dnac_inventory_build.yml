@@ -27,7 +27,7 @@
       loop: "{{ range(1, 10000, 500) | list }}"
       loop_control:
         extended: true
-#        break_when: dnac_devices_to_update_from_tag.dnac_response.response | default([]) | length < 500
+#        break_when: dnac_devices_to_update_from_tag.dnac_response.response | default([]) | length < 500 ### works with Ansible 2.18+
       register: dnac_devices_to_update_from_tag
 
 - name: Inventory from hostlist
@@ -46,16 +46,23 @@
       register: dnac_hosts_to_update
 
     - name: Get devices by hostname
+      when: >
+            ansible_loop.index == 1 or
+             dnac_devices_to_update_from_hostlist.dnac_response.response | default([])
       cisco.dnac.network_device_info:
         dnac_host: "{{ dnac_host }}"
         dnac_username: "{{ dnac_username }}"
         dnac_password: "{{ dnac_password }}"
         dnac_verify: "{{ dnac_verify | default(omit) }}"
         hostname: "{{ (dnac_hosts_to_update.content | default([]) | b64decode).splitlines() }}"
+        offset: "{{ item }}"
+      loop: "{{ range(1, 10000, 500) | list }}"
+      loop_control:
+        extended: true
       register: dnac_devices_to_update_from_hostlist
 
 - name: Build complete inventory
   ansible.builtin.set_fact:
     dnac_devices_to_update: "{{ ((dnac_devices_to_update_from_tag.results | default([]) | map(attribute='dnac_response.response'))[0] | default([]) +
-                                 dnac_devices_to_update_from_hostlist.dnac_response.response | default([])) |
+                                 (dnac_devices_to_update_from_hostlist.results | default([]) | map(attribute='dnac_response.response'))[0] | default([])) |
                                 unique(attribute='hostname') }}"
