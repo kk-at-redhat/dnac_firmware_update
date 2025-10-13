@@ -1,0 +1,78 @@
+---
+# This has not been tested
+
+- name: Authenticate to Odyssey
+  block:
+    - name: Get Odyssey API token
+      ansible.builtin.uri:
+        url: "https://{{ odyssey_host }}" # add API endpoint
+        method: POST
+        user: "{{ odyssey_username }}"
+        password: "{{ odyssey_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ odyssey_verify | default(omit) }}"
+        return_content: true
+        headers:
+          Content-Type: "application/json"
+      no_log: true
+      register: auth_response
+
+  rescue:
+    - name: Extract authentication error
+      ansible.builtin.set_fact:
+        auth_error: "{{ auth_response.msg }}"
+      no_log: true
+
+    - name: Show authentication error
+      ansible.builtin.debug:
+        msg: " Getting API token from Odyssey failed with the following error: {{ auth_error }}"
+      failed_when: true
+
+- name: Trigger pre-activation checks
+  when: odyssey_preactivation | default(false)
+  ansible.builtin.uri:
+    url: "https://{{ odyssey_host }}" # add API endpoint
+    method: POST
+    headers:
+      X-Auth-Token: "{{ auth_response.json.Token }}"
+      Content-Type: "application/json"
+    body_format: json
+    validate_certs: "{{ odyssey_verify | default(omit) }}"
+    body: "{{ dnac_devices_to_update | map(attribute='hostname') }}"
+    status_code: 200, 201, 202, 204, 206
+  register: odyssey_triggered_task
+
+- name: Trigger post-activation checks
+  when: odyssey_postactivation | default(false)
+  ansible.builtin.uri:
+    url: "https://{{ odyssey_host }}" # add API endpoint
+    method: POST
+    headers:
+      X-Auth-Token: "{{ auth_response.json.Token }}"
+      Content-Type: "application/json"
+    body_format: json
+    validate_certs: "{{ odyssey_verify | default(omit) }}"
+    body: "{{ dnac_devices_to_update | map(attribute='hostname') }}"
+    status_code: 200, 201, 202, 204, 206
+  register: odyssey_triggered_task
+
+- name: Get check results
+  ansible.builtin.uri:
+    url: "https://{{ odyssey_host }}" # add API endpoint
+    method: GET
+    headers:
+      X-Auth-Token: "{{ auth_response.json.Token }}"
+      Content-Type: "application/json"
+    body_format: json
+    validate_certs: "{{ odyssey_verify | default(omit) }}"
+    body: "{{ odyssey_triggered_task.results.taskid }}"
+    status_code: 200, 201, 202, 204, 206
+  register: odyssey_task_check
+  until: odyssey_task_check.results.status != "In progress"
+  delay: "{{ odyssey_delay | int }}"
+  retries: "{{ (odyssey_max_time | int / odyssey_delay | int) | int }}"
+
+- name: Overwrite inventory after pre-checks
+  when: odyssey_preactivation | default(false)
+  ansible.builtin.set_fact:
+    dnac_devices_to_update: "{{ odyssey_task_check.results.devices }}"

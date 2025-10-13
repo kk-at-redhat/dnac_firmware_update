@@ -39,6 +39,13 @@
   ansible.builtin.set_fact:
     dnac_devices_to_update: "{{ dnac_devices_to_update | selectattr('reachabilityStatus', 'equalto', 'Reachable') }}"
 
+# - name: Perform pre-activation checks
+#   when: dnac_perform_activation | default(false)
+#   ansible.builtin.include_tasks:
+#     file: odyssey_tasks.yml
+#   vars:
+#     odyssey_preactivation: true
+
 - name: Stop if inventory is empty
   when: not dnac_devices_to_update
   ansible.builtin.meta: end_play

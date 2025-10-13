@@ -17,6 +17,13 @@
     max_wait_time: "{{ dnac_activation_max_time_final }}"
     check_delay: "{{ dnac_activation_check_delay }}"
 
+# - name: Perform post-activation checks
+#   when: dnac_perform_activation | default(false)
+#   ansible.builtin.include_tasks:
+#     file: odyssey_tasks.yml
+#   vars:
+#     odyssey_postactivation: true
+
 - name: Refresh device status
   when: >
         ansible_loop.index == 1 or
