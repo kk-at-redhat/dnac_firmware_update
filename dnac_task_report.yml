@@ -8,7 +8,7 @@
     max_wait_time: "{{ dnac_distribution_max_time_final }}"
     check_delay: "{{ dnac_distribution_check_delay }}"
 
-- name: Wait for last activation task to finish
+- name: Wait for last activation
   when: dnac_perform_activation | default(false)
   ansible.builtin.include_tasks:
     file: dnac_task_wait.yml
@@ -16,6 +16,22 @@
     task_id: "{{ image_activation_trigger.json.response.taskId }}"
     max_wait_time: "{{ dnac_activation_max_time_final }}"
     check_delay: "{{ dnac_activation_check_delay }}"
+
+- name: Refresh device status
+  when: >
+        ansible_loop.index == 1 or
+         dnac_devices_refreshed.dnac_response.response | default([])
+  cisco.dnac.network_device_info:
+    dnac_host: "{{ dnac_host }}"
+    dnac_username: "{{ dnac_username }}"
+    dnac_password: "{{ dnac_password }}"
+    dnac_verify: "{{ dnac_verify | default(omit) }}"
+    hostname: "{{ dnac_devices_to_update | map(attribute='hostname') }}"
+    offset: "{{ item }}"
+  loop: "{{ range(1, 10000, 500) | list }}"
+  loop_control:
+    extended: true
+  register: dnac_devices_refreshed
 
 - name: Authenticate to DNAC API
   ansible.builtin.include_tasks:
@@ -35,7 +51,10 @@
   register: task_details
 
 - name: Generate failed report
-  when: item.taskStatus != "success"
+  when: >
+        item.taskStatus != "success" or
+        ((dnac_devices_refreshed.results | map(attribute='dnac_response.response'))[0] |
+          selectattr('hostname', 'equalto', item.hostName))[0].reachabilityStatus != 'Reachable'
   ansible.builtin.lineinfile:
     path: /tmp/distribution_list_failed.txt
     line: "{{ item.hostName }}"
@@ -46,7 +65,10 @@
     label: "Adding: {{ item.hostName }}"
 
 - name: Generate success report
-  when: item.taskStatus == "success"
+  when: >
+        item.taskStatus == "success" and
+        ((dnac_devices_refreshed.results | map(attribute='dnac_response.response'))[0] |
+          selectattr('hostname', 'equalto', item.hostName))[0].reachabilityStatus == 'Reachable'
   ansible.builtin.lineinfile:
     path: /tmp/distribution_list_success.txt
     line: "{{ item.hostName }}"
@@ -64,7 +86,9 @@
            {{ dnac_devices_to_update | selectattr('hostname', 'equalto', item.hostName) | map(attribute='platformId') | first }},\
            {{ dnac_devices_to_update | selectattr('hostname', 'equalto', item.hostName) | map(attribute='serialNumber') | first }},\
            {{ dnac_devices_to_update | selectattr('hostname', 'equalto', item.hostName) | map(attribute='softwareVersion') | first }},,,,\
-           {{ item.taskStatus | upper }},"
+           {{ item.taskStatus | upper }},\
+           {{ ((dnac_devices_refreshed.results | map(attribute='dnac_response.response'))[0] |
+                selectattr('hostname', 'equalto', item.hostName))[0].reachabilityStatus }}"
     create: true
     mode: '666'
   loop: "{{ task_details.results | map(attribute='json.response') | flatten }}"
